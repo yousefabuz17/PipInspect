@@ -1,4 +1,4 @@
-<img src="logo/pkg_inspect-logo.png" alt="PkgInspect Logo" width=250>
+<img src="logo/pkginspect_logo.png" alt="PkgInspect Logo" width=250>
 
 # Python Package Inspector
 
