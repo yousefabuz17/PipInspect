@@ -1,0 +1,15 @@
+# Include documentation and licensing
+include README.md
+include LICENSE.md
+
+# Include source code
+recursive-include src *.py
+recursive-include src/pkg_inspect/pkg_functions *.py
+recursive-include src/pkg_inspect/pkg_modules *.py
+recursive-include src/pkg_inspect/pkg_utils *.py
+
+# Include tests
+recursive-include tests *.py
+
+# Exclude unwanted files (example)
+global-exclude __pycache__ *.pyc *.pyo

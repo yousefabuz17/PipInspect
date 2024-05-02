@@ -1,0 +1,46 @@
+[project]
+name = "pkg_inspect"
+version = "0.1.0"
+description = "A comprehensive tool to inspect Python packages and Python installations."
+readme = "README.md"
+readme-content-type = "text/markdown"
+license = { text = "Apache Software License" }
+requires-python = ">=3.8"
+authors = [
+    { name = "Yousef Abuzahrieh", email = "yousefzahrieh17@gmail.com" }
+]
+urls = {
+    "Homepage" = "https://github.com/yousefabuz17/PkgInspect",
+    "Download" = "https://github.com/yousefabuz17/PkgInspect.git"
+}
+platforms = ["Windows", "Linux", "MacOS"]
+keywords = ["Python", "Packages", "Inspection", "Utilities"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Utilities"
+]
+
+[project.dependencies]
+aiohttp = "==3.9.0b0"
+beautifulsoup4 = "==4.12.3"
+importlib_metadata = "==6.8.0"
+packaging = "==24.0"
+pypistats = "==1.5.0"
+rapidfuzz = "==3.3.1"
+
+[build-system]
+requires = ["setuptools >= 42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["pkg_inspect"]
+package-dir = {"": "src"}
+include-package-data = true
+
+[tool.setuptools.package_data]
+pkg_inspect = ["*.py"]
