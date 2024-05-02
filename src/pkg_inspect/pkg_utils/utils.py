@@ -167,19 +167,19 @@ def get_opmethod(
         "!=": "ne",
     }
     if not allow_none:
-        if not hasattr(operator, opmethod):
+        if not all_methods:
+            if opmethod not in chain.from_iterable(zip(*comparison_ops.items())):
+                raise PkgException(
+                    f"The specified operator method {opmethod!r} is not a valid comparison operator."
+                )
+
+        elif all_methods and not hasattr(operator, opmethod):
             raise PkgException(
                 f"The specified operator method {opmethod!r} is not a valid option."
             )
-        if not all_methods and opmethod not in chain.from_iterable(
-            zip(*comparison_ops.items())
-        ):
-            raise PkgException(
-                f"The specified operator method {opmethod!r} is not a valid comparison operator."
-            )
     # Return the operator method if valid
     # E.g `operator.gt`, `operator.lt`, `operator.eq`
-    return getattr(operator, opmethod or "", None)
+    return getattr(operator, comparison_ops.get(opmethod, opmethod), None)
 
 
 # Default operator methods
