@@ -1,3 +1,5 @@
+<img src="logo/pkg_inspect-logo.png" alt="PkgInspect Logo" width=250>
+
 # Python Package Inspector
 
 This module is designed to inspect and compare Python packages and Python versions. It provides a set of tools and utility classes to help retrieve information from installed Python packages, compare versions, and extract various details about Python installations.
