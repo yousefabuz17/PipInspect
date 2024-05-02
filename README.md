@@ -150,8 +150,6 @@ Feedback is crucial for the improvement of the `PkgInspect` project. If you enco
 - [Discord](https://discord.com/users/581590351165259793)
 - [Gmail](yousefzahrieh17@gmail.com)
 
-> *Your feedback and contributions play a significant role in making the `DataLoader` project more robust and valuable for the community. Thank you for being part of this endeavor!*
-
 ## License:
 
 This project is licensed under the Apache 2.0 license. See the [LICENSE.md](LICENSE.md) file for details.
