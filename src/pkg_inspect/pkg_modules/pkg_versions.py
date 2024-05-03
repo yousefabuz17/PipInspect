@@ -964,9 +964,7 @@ class PkgVersions:
         gh_stats = None
         if stats_chart:
             try:
-                first_key = next(
-                    s for s in stats_chart if best_match(s.capitalize(), GH_STATS)
-                )
+                first_key = find_best_match(stats_chart, GH_STATS)
                 flat_stats = stats_chart[stats_chart.index(first_key) :]
                 gh_stats = {
                     # E.g., '7' -> 7
@@ -978,18 +976,18 @@ class PkgVersions:
                     if v[0].isdigit() and search(r"(?:KB|MB|GB|TB)", v)
                     else v
                     for k, v in zip(flat_stats[::2], flat_stats[1::2])
-                    if k in GH_STATS
+                    if best_match(k, GH_STATS)
                 }
-            except (*BASE_EXCEPTIONS, StopIteration):
+            except BASE_EXCEPTIONS:
                 ...
-
+        
         if all((keys_only, gh_stats)):
             return (*sorted(gh_stats),)
         return gh_stats
 
     @classmethod
-    def gh_stat_keys(cls):
-        return cls(package=DUMMY_PKGNAME)._get_gh_stats(keys_only=True)
+    def gh_stat_keys(cls) -> tuple[str]:
+        return cls(package=DUMMY_PKGNAME)._get_gh_stats(keys_only=True) or GH_STATS
 
     def _version_history(self) -> Generator[DateTimeAndVersion, None, None]:
         @exception_handler(item=f"{self._pkg_path!r}", exceptions=TimeoutError)

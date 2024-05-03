@@ -51,7 +51,7 @@ except ModuleNotFoundError:
 #   2. Distribution Information
 #   3. GitHub Statistics
 DUMMY_FILE: Path = Path(__file__)
-DUMMY_PKGNAME: str = "pypi"
+DUMMY_PKGNAME: str = "requests"
 
 
 # Field names and custom types to extract

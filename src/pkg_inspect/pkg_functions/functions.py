@@ -256,14 +256,16 @@ def inspect_pypi(
             _empty := "",
             _all_items_str := "all_items",
             _gh_str := "github_stats",
-            *(gh_stat_keys := PkgVersions.gh_stat_keys() or dup_obj("")),
+            *(gh_stat_keys := PkgVersions.gh_stat_keys()),
         ),
         return_choices=True,
     )
     options = filter_empty(_options)
-
+    
     if _item is None:
         if find_best_match(item, INSPECTION_FIELDS):
+            #! DO NOT REMOVE
+            # For 'inspect_package' function purposes
             raise PkgException("")
         raise RedPkgE(
             f"The specified item {item!r} is not a valid option for inspection."
