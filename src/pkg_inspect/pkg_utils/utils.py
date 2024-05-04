@@ -138,11 +138,12 @@ BASE_EXCEPTIONS: TupleExceptions = PkgException.BASE_EXCEPTIONS
 
 
 # Default base for converting bytes to other units
+# ------------------------------------------------
 BYTES_BASE: int = 1024
 
 
 # Default Exception Handlers for Base Exceptions
-# --------------------------------------------
+# ----------------------------------------------
 exception_handler: CallableT = PkgException.exception_handler
 base_exception_handler = partial(exception_handler, exceptions=BASE_EXCEPTIONS)
 
@@ -151,6 +152,11 @@ base_exception_handler = partial(exception_handler, exceptions=BASE_EXCEPTIONS)
 # -----------------------------------------
 DEFAULT_TIMEOUT: int = 300  # 5 minute
 LONG_TIMEOUT: int = 900  # 15 minutes
+
+
+# Unit Measurement Keys
+# ---------------------
+UNITS: tuple[str] = ("KB", "MB", "GB", "TB")
 
 
 # region OperatorUtils
@@ -1183,7 +1189,7 @@ def str_to_bytes(num: Union[str, float, int], unit: str = None) -> NamedTuple:
             num, unit = num.split()
 
     cc = bytes_unit_chart()
-    unit = find_best_match(unit, cc, default_value=next(iter(cc)))
+    unit = next((c for c in cc if best_match(unit, c[:2])), None)
     return bytes_converter(multiply_(float(num), cc[unit]))
 
 

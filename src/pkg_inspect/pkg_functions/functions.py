@@ -28,9 +28,7 @@ from ..pkg_utils.exception import PkgException, RedPkgE
 from ..pkg_utils.utils import *
 
 
-# Partial functions to exclude the generator argument
 _PkgI: PkgInspect = partial(PkgInspect, generator=False)
-_PkgV: PkgVersions = partial(PkgVersions, generator=False)
 _PKGV_PROPS: tuple[str] = (*get_properties(PkgVersions),)
 
 
@@ -261,7 +259,7 @@ def inspect_pypi(
         return_choices=True,
     )
     options = filter_empty(_options)
-    
+
     if _item is None:
         if find_best_match(item, INSPECTION_FIELDS):
             #! DO NOT REMOVE
@@ -278,7 +276,7 @@ def inspect_pypi(
     # Return the requested item from the package
     if all((package, _item)):
         pypi_item = lambda it: getattr(
-            _PkgV(package, package_manager=package_manager), it
+            PkgVersions(package, package_manager=package_manager), it
         )
 
         if _item == _all_items_str:
@@ -316,7 +314,7 @@ def get_available_updates(
         _pkg_i = partial(_PkgI, package=package)
         i_pythons = _pkg_i().installed_pythons
         current_version = _pkg_i(pyversion=i_pythons[-1]).installed_version
-    return _PkgV(package).get_updates(current_version)
+    return PkgVersions(package).get_updates(current_version)
 
 
 __all__ = ("INSPECTION_FIELDS",) + (

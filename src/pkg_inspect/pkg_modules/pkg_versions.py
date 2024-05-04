@@ -657,7 +657,6 @@ class PkgVersions:
         "_pkg_url",
         "_pkg_path",
         "_sort_by",
-        "_generator",
         "_vhistory",
         "_initial",
         "_latest",
@@ -670,7 +669,6 @@ class PkgVersions:
         package_manager: str = None,
         *,
         sort_by: Union[DatesOrVersions, ZeroOrOne] = "versions",
-        generator=True,
     ) -> None:
         # Example: `PkgVersions("pandas") < PkgVersions("pandas")`
         # Compares the latest version of the specified package with the latest version of the other package
@@ -681,7 +679,6 @@ class PkgVersions:
         self._pkg_path = self._validate_package(self._pkg_name)
         self._pkg_url = self._pkg_path.removesuffix("#history")
         self._sort_by = sort_by
-        self._generator = generator
 
         # Properties
         self._vhistory = None  # Version History
@@ -964,7 +961,7 @@ class PkgVersions:
         gh_stats = None
         if stats_chart:
             try:
-                first_key = find_best_match(stats_chart, GH_STATS)
+                first_key = next((k for k in stats_chart if best_match(k, GH_STATS)))
                 flat_stats = stats_chart[stats_chart.index(first_key) :]
                 gh_stats = {
                     # E.g., '7' -> 7
@@ -973,14 +970,15 @@ class PkgVersions:
                     else int(clean(v)) if search(r"[,][^a-zA-Z]", v)
                     # E.g., '12.4 MB' -> Stats NamedTuple
                     else str_to_bytes(*v.split())
-                    if v[0].isdigit() and search(r"(?:KB|MB|GB|TB)", v)
+                    if v[0].isdigit()
+                    and search("|".join(map(re.escape, UNITS)), v, compiler=True)
                     else v
                     for k, v in zip(flat_stats[::2], flat_stats[1::2])
                     if best_match(k, GH_STATS)
                 }
             except BASE_EXCEPTIONS:
                 ...
-        
+
         if all((keys_only, gh_stats)):
             return (*sorted(gh_stats),)
         return gh_stats

@@ -513,7 +513,7 @@ class PkgInspect(_PkgInspect):
 
     def __check_attrs(self, attr: str = None):
         _musthave = lambda at: musthave_attr(
-            self, attr=at, item="Python {!r}".format(at.lstrip("_"))
+            self, attr=at, item="Python {!r}".format(getattr(self, at))
         )
         if attr and attr in self.__slots__:
             _musthave(attr)
@@ -646,7 +646,7 @@ class PkgInspect(_PkgInspect):
                 - E.g., 'short_meta' will match 'Short Meta', 'short_meta', 'short-meta', etc.
                 #### NOTE: Please ensure that the field name specified closely matches \
                     one of the available field names to prevent errors or inaccuracies.
-            - [EXPERIMENTAL] Document Retrieval
+            - `[EXPERIMENTAL]` Document Retrieval
                 - Retrieving the packages documentation is not supported for all packages.
                 - The method will attempt to retrieve the documentation from the package using various methods:
                     - importing the packing and using the `__doc__` attribute
