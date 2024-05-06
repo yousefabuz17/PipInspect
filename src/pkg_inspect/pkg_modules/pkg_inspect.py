@@ -79,6 +79,11 @@ class _PkgInspect:
     def _vparser(v) -> PackageVersion:
         return PkgV.parse_version(v)
 
+    @staticmethod
+    def _fix_pkgname(pkg_name: str = None) -> str:
+        if pkg_name:
+            return stranslate(pkg_name, "_", "-")
+
     @classmethod
     @exception_handler("site-path version number", exceptions=StopIteration)
     def _get_version_num(
@@ -177,7 +182,7 @@ class _PkgInspect:
             package_ver = self._get_version_num(d_package, dist_ver=True)
             if package_ver is None:
                 # Import the version number if the version number is not found
-                # Otherwise, will return Version("0.0.0.0") by default.
+                # Otherwise, will return Version("0.0.0") by default.
                 package_ver = PkgV.import_version(package_name, parse_version=True)
             return package_name, package_ver
 
@@ -204,8 +209,8 @@ class _PkgInspect:
         return_total: bool = False,
         **kwargs,
     ) -> Union[list[str], Any]:
-        py_version = self._check_version(py_version)
-        raps = kwargs.pop("return_as_paths", True)
+        py_version: PackageVersion = self._check_version(py_version)
+        raps: bool = kwargs.pop("return_as_paths", True)
         pyver_packagenames = sorted(
             # Get the package names for the specified Python version
             py_pack if raps else get_package_name(py_pack)
@@ -247,8 +252,8 @@ class _PkgInspect:
             - `PkgException`: If the package is not found in the specified Python version.
 
         """
-        py_version = self._check_version(py_version)
-
+        py_version: PackageVersion = self._check_version(py_version)
+        package_name: str = self._fix_pkgname(package_name)
         try:
             # Check if the package is found in the specified Python version
             return next(
@@ -419,7 +424,7 @@ class PkgInspect(_PkgInspect):
             (`ThreadPoolExecutor`)
         - `sort_by` (Union[ZeroOrOne, Literal["reverse"]]): A value indicating whether to sort the distributions.
 
-    #### Attributes:
+    #### Properties:
         - `package_paths` (Iterable[Path]): Property for site-package paths for each python version.
         - `package_versions` (Generator[tuple[str, tuple[tuple[Any, str]]]]): Property for package versions installed for each python version.
         - `pyversions` (tuple[Path]): Property for installed python versions.
@@ -427,46 +432,10 @@ class PkgInspect(_PkgInspect):
 
     #### Methods:
         - `inspect_package`: Inspect details of an installed Python package.
-        - `_check_package`: Check the package name for the specified Python version.
-
-    #### Examples:
-        ```python
-        # The `inspect_package` method is called to inspect the details of the `pkgInspect` package.
-        PkgInspect().inspect_package(package="pkgInspect", item="short_meta")
-        # Output: {'Metadata-Version': 'x.x', 'Name': 'pkgInspect', 'Version': '1.x.x', 'Summary': 'A powerful data analysis and manipulation library for Python.', 'Home-page': 'https://pandas.pydata.org', 'Author': 'Wes McKinney', 'Author-email': '
-
-        PkgInspect().inspect_package(package="pkgInspect", item="version")
-        # Output: '1.x.x'
-
-        PkgInspect().inspect_package(package="pkgInspect", item="license")
-        # Output: 'Apache 2.0'
-
-        PkgInspect().inspect_package(package="pkgInspect", item="version_history")
-        # Output: (('1.x.x', 'Jan 1, 2021'), ('1.x.x', 'Dec 1, 2020'), ...)
-
-        # Attrbutes
-        PkgInspect().pyversions
-        # Output: ('3.8', '3.9', '3.10', ...)
-
-        PkgInspect().package_paths
-        # Output:
-        # ('3.8', <generator object PkgInspect._ver_executor at 0x...>, ...)
-        # ('3.8', [PosixPath('/usr/local/Cellar/python@3.8/3.8.2_2/Frameworks/Python.framework/Versions/3.8/lib/python3.8/site-packages/pip-20.0.2.dist-info'), ...])
-
-        PkgInspect().site_packages
-        # Output:
-        # <generator object PkgInspect._get_site_packages at 0x...>
-        # (PosixPath('/usr/local/Cellar/python@3.8/3.8.2_2/Frameworks/Python.framework/Versions/3.8/lib/python3.8/site-packages'), ...)
-
-        PkgInspect().package_versions
-        # Output:
-        # ('3.8', <generator object PkgInspect._ver_executor at 0x...>)
-        # ('3.8', (('pip', '20.0.2'), ('setuptools', '46.1.3'), ('wheel', '0.34.2'), ...))
-        ```
     """
 
     __dict__ = {}
-    __slots__ = ("__weakrefs__", "_pyversion", "_pkg", "__pipv_pkg", "__pipm")
+    __slots__ = ("__weakrefs__", "_pyversion", "_pkg", "__pipm")
 
     def __init__(
         self, package: PathOrStr = None, pyversion: str = None, **kwargs
@@ -474,19 +443,19 @@ class PkgInspect(_PkgInspect):
         # kwargs: 'generator', 'max_workers', 'sort_by'
         super().__init__(**kwargs)
         self._pyversion = self._check_version(pyversion, allow_none=True)
-        self._pkg = (
-            self._check_package(
-                py_version=self._pyversion,
-                package_name=get_package_name(package),
-            )
-            if all((self._pyversion, package))
-            else None
-        )
+        self._pkg = self._fix_pkgname(package)
         self.__pipm: PkgM = partial(PkgM, max_workers=self._workers)
-        if self._pkg:
-            self.__pipv_pkg: PkgV = lambda: PkgV(
-                package=self._pkg, generator=self._generator
-            )
+
+    def __pipv(self) -> PkgV:
+        if self.__validate_pkg():
+            return PkgV(package=self._pkg, generator=self._generator)
+
+    def __validate_pkg(self) -> Union[str, NoReturn]:
+        self.__check_attrs()
+        return self._check_package(
+            py_version=self._pyversion,
+            package_name=get_package_name(self._pkg),
+        )
 
     @recursive_repr(fillvalue="PkgInspect(...)")
     def __repr__(self) -> str:
@@ -516,6 +485,11 @@ class PkgInspect(_PkgInspect):
             self, attr=at, item="Python {!r}".format(getattr(self, at))
         )
         if attr and attr in self.__slots__:
+            if attr == "_pkg":
+                if not isinstance(self._pkg, str):
+                    raise PkgException(
+                        f"The specified package must be a string type value."
+                    )
             _musthave(attr)
             return
         else:
@@ -709,6 +683,7 @@ class PkgInspect(_PkgInspect):
                             - `total_versions` (int): Returns the total number of versions of the package.
                             - `version_history` (TupleOfPkgVersions): Returns the version history of the specified package.
                             - `package_url`: Returns the URL of the package on PyPI.
+                            - `downloads_history` (dict[str, int]): Returns the downloads history of the package.
                             - `github_stats_url` (str): Returns the GitHub statistics URL of the package.
                             - `github_stats` (dict[str, Any]): Returns the GitHub statistics of the package.
                                 - The GitHub statistics are returned as a dictionary \
@@ -865,17 +840,17 @@ class PkgInspect(_PkgInspect):
             # Otherwise, return the specified item from the 'pypistats' module
             return _get_pypistat(_item)
 
-        # The following options require the package to be specified
-        # and the Python version to be specified and validated.
-        self.__check_attrs()
+        # The following options require the package and/or Python version
+        # to be specified and validated.
+        self.__validate_pkg()
 
         if _item in pkgv_props:
-            get_pkgv = lambda it: getattr(self.__pipv_pkg(), it)
+            get_pkgv = lambda it: getattr(self.__pipv(), it)
             if _item in gh_keys or _item == (gh_stats_str := "github_stats"):
-                gh_stats = lambda x=gh_stats_str: get_pkgv(x)
+                gh_stats = get_pkgv(gh_stats_str)
                 if _item == gh_stats_str:
-                    return gh_stats()
-                return gh_stats()[_item.capitalize()]
+                    return gh_stats
+                return gh_stats[_item]
             # Check if the item is a property of the 'PkgVersions' class
             return get_pkgv(_item)
         elif _item in pkgi_props:
@@ -1086,13 +1061,13 @@ class PkgInspect(_PkgInspect):
     @property
     def islatest_version(self) -> bool:
         """Return a boolean value indicating whether the package is the latest version."""
-        return self.__pipv_pkg().is_latest(self.installed_version)
+        return self.__pipv().is_latest(self.installed_version)
 
     @property
     @generator_handler(is_string=True)
     def available_updates(self) -> Optional[Iterator[PackageVersion]]:
         """Return the available updates for the specified package."""
-        return self.__pipv_pkg().get_updates(self.installed_version)
+        return self.__pipv().get_updates(self.installed_version)
 
     @property
     def installed_version(self) -> PackageVersion:

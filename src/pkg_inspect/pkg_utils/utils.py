@@ -50,7 +50,7 @@ except ModuleNotFoundError:
 #   1. package metadata
 #   2. Distribution Information
 #   3. GitHub Statistics
-DUMMY_FILE: Path = Path(__file__)
+DUMMY_PATH: Path = Path(__file__).parents[3]  # Main Directory
 DUMMY_PKGNAME: str = "requests"
 
 
@@ -161,7 +161,7 @@ UNITS: tuple[str] = ("KB", "MB", "GB", "TB")
 
 # region OperatorUtils
 def get_opmethod(
-    opmethod: OperatorMethods, all_methods: bool = False, *, allow_none: bool = False
+    opmethod: OperatorMethods, *, allow_none: bool = False
 ) -> Optional[Any]:
     """Check the specified operator method is valid."""
     comparison_ops = {
@@ -171,30 +171,31 @@ def get_opmethod(
         "<=": "le",
         "<": "lt",
         "!=": "ne",
+        "+": "add",
+        "**": "pow",
+        "*": "mul",
     }
-    if not allow_none:
-        if not all_methods:
-            if opmethod not in chain.from_iterable(zip(*comparison_ops.items())):
-                raise PkgException(
-                    f"The specified operator method {opmethod!r} is not a valid comparison operator."
-                )
 
-        elif all_methods and not hasattr(operator, opmethod):
-            raise PkgException(
-                f"The specified operator method {opmethod!r} is not a valid option."
-            )
-    # Return the operator method if valid
     # E.g `operator.gt`, `operator.lt`, `operator.eq`
-    return getattr(operator, comparison_ops.get(opmethod, opmethod), None)
+    opm = next(
+        (o for o in chain.from_iterable(zip(*comparison_ops.items())) if o == opmethod),
+        "",
+    )
+    if all((not allow_none, not opm, not hasattr(operator, opmethod))):
+        raise PkgException(
+            f"The specified operator method {opmethod = } is not a valid operator."
+        )
+    if opm:
+        # Return the operator method if valid
+        return getattr(operator, comparison_ops.get(opm, opmethod), None)
 
 
 # Default operator methods
-_gopm = partial(get_opmethod, all_methods=True)
-add_ = _gopm("add")
-multiply_ = _gopm("mul")
-pow_ = _gopm("pow")
-equal_ = get_opmethod("eq")
-lessthan_ = get_opmethod("lt")
+add_ = get_opmethod("+")
+multiply_ = get_opmethod("*")
+pow_ = get_opmethod("**")
+equal_ = get_opmethod("==")
+lessthan_ = get_opmethod("<")
 
 
 # region InspectUtils
@@ -483,15 +484,18 @@ def generate_id(
 # endregion
 
 
-# region CleanUtils
-def clean(s: str, exclude: str = "", keep_punct: bool = False) -> str:
+# region StrUtils
+def stranslate(s: str, *args):
+    return s.translate(str.maketrans(*args))
+
+
+def clean(s: str, exclude: str = "") -> str:
     """
     Remove all instances of a specified character from a string.
 
     #### Args:
         - `s` (str): The string to clean.
         - `exclude` (str): The character(s) to exclude from the string.
-        - `keep_punct` (bool): A flag indicating whether to keep punctuation characters in the string.
 
     #### Returns:
         - `str`: The cleaned string.
@@ -499,30 +503,22 @@ def clean(s: str, exclude: str = "", keep_punct: bool = False) -> str:
     #### Note:
         - The function removes all instances of the specified character(s) from the string.
         - Punctuation characters are removed by default.
-
-    #### Example:
-    ```python
-    clean("ae9c3f4g5h6i7j8k9l0", "ae9c3")
-    # Output: 'f4g5h6i7j8k9l0'
-
-    clean("ae9c3f4g5h6i7j8k9l0", string.ascii_lowercase)
-    # Output: '93657890'
-    ```
-
     """
-
-    @base_exception_handler(item="the specified string.")
-    def clean_(s_):
-        return s_.translate(
-            str.maketrans("", "", add_(exclude, "" if keep_punct else punctuation))
-        )
-
-    return clean_(s)
+    return stranslate(
+        s,
+        *dup_obj(""),
+        add_(
+            # Remove punctuation by default
+            # if 'exclude' does not contain punctuation
+            exclude,
+            "" if search(exclude, punctuation, compiler=True) else punctuation,
+        ),
+    )
 
 
 def rm_period(s: str) -> str:
     """Remove all instances of a period from a string."""
-    return clean(s, ".", keep_punct=True)
+    return clean(s, ".")
 
 
 # endregion
@@ -1447,7 +1443,33 @@ def filter_empty(iter_obj: Iterable, obj: object = "", sort_result: bool = True)
     return filtered
 
 
-async def url_request(url: PathOrStr) -> Union[str, Any]:
+def abbreviate_number(num: Union[int, str]):
+    """Converts a large number into an abbreviated form with common terms like Thousand, Million, Billion, etc."""
+    # Remove commas and convert to integer
+    if isinstance(num, str):
+        num = int(clean(num))
+
+    # Define abbreviations and their respective scales
+    abbrevs = (
+        (1_000_000_000_000, "Trillion"),
+        (1_000_000_000, "Billion"),
+        (1_000_000, "Million"),
+    )
+
+    for scale, abbrev in abbrevs:
+        if num >= scale:
+            # Convert to the appropriate scale and round to two decimal places
+            value = num / scale
+            # If rounded value is whole number, return it without decimal
+            if value == (int_val := int(value)):
+                return f"{int_val} {abbrev}"
+            return f"{value:.2f} {abbrev}"
+
+    # If less than 1000, return the number as is
+    return num
+
+
+async def url_request(url: PathOrStr, **kwargs) -> Union[str, Any]:
     try:
         async with ClientSession(
             connector=TCPConnector(
@@ -1460,7 +1482,7 @@ async def url_request(url: PathOrStr) -> Union[str, Any]:
         ) as session:
             if isinstance(url, Path):
                 url = url.as_posix()
-            async with session.get(url) as response:
+            async with session.get(url, **kwargs) as response:
                 # If the response is valid, return the response text.
                 return await response.text()
     except ContentTypeError as cte:

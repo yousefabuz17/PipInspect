@@ -622,9 +622,10 @@ class PkgVersions:
     ```
     """
 
-    # The API endpoint for fetching package versions
+    # The API endpoint for fetching package stats & versions
     PYPI_API: str = "https://pypi.org/project/{}/#history"
     STATS_API: str = "https://libraries.io/{}/{}"
+    DOWNLOADS_API: str = "https://www.pepy.tech/projects/{}"
 
     # Pattern for matching release dates
     # Example: "Jan 1, 2021"
@@ -661,6 +662,9 @@ class PkgVersions:
         "_initial",
         "_latest",
         "_gh_stats",
+        "_gh_url",
+        "_downloads_url",
+        "_dhistory",
     )
 
     def __init__(
@@ -674,17 +678,22 @@ class PkgVersions:
         # Compares the latest version of the specified package with the latest version of the other package
 
         # Parameters
-        self._pkg_name = package
+        self._pkg_name = stranslate(package, "_", "-")
         self._pkg_manager = package_manager
-        self._pkg_path = self._validate_package(self._pkg_name)
-        self._pkg_url = self._pkg_path.removesuffix("#history")
         self._sort_by = sort_by
+        self._pkg_path = self._validate_package(self._pkg_name)
 
-        # Properties
+        # Data Properties
         self._vhistory = None  # Version History
         self._initial = None  # Initial Version
         self._latest = None  # Latest Version
-        self._gh_stats = None
+        self._gh_stats = None  # GitHub Stats
+        self._dhistory = None  # Downloads History
+
+        # URL Properties
+        self._pkg_url = None
+        self._gh_url = None
+        self._downloads_url = None
 
     def __len__(self) -> int:
         """Return the total number of versions in the version history."""
@@ -711,7 +720,7 @@ class PkgVersions:
 
     @classmethod
     def import_version(
-        cls, package_name: str, parse_version: bool = False
+        cls, package_name: str, *, parse_version: bool = False
     ) -> Union[PackageVersion, str]:
         """
         Retrieve the version of the specified package using the `importlib.metadata` module.
@@ -922,16 +931,20 @@ class PkgVersions:
         )
 
     @cache
-    def _main_request(self, url: PathOrStr) -> Union[str, Any]:
+    def _main_request(self, url: PathOrStr, parse_html: bool = True) -> Union[str, Any]:
         """Return the main asynchronous request for the version history page (#history) of the specified package."""
         try:
-            return asyncio.run(url_request(url))
-        except ClientResponseError:
+            url_contents = asyncio.run(url_request(url))
+            if parse_html:
+                url_contents = self._parse_html(url_contents)
+            return url_contents
+        except ClientResponseError as cre:
             raise RedPkgE(
                 f"An error occurred while trying to find {url!r}.",
                 "Please ensure the package name and manager is correct and is available on the following websites:"
                 f"\n- {self.package_url = }"
-                f"\n- {self.github_stats_url = }",
+                f"\n- {self.github_stats_url = }"
+                f"\n[ORG-ERROR]: {cre}",
             )
         except BASE_EXCEPTIONS as be_error:
             raise be_error
@@ -942,7 +955,7 @@ class PkgVersions:
     def _history_page(self) -> Generator[Any, str, None]:
         # Parse the specified package history release page using BeautifulSoup.
         # Return the release distribution.
-        hsoup: BeautifulSoup = self._parse_html(self._main_request(self._pkg_path))
+        hsoup: BeautifulSoup = self._main_request(self._pkg_path)
         yield from (
             rd  # release-date
             for i in hsoup.find_all("div", class_="release")
@@ -951,7 +964,7 @@ class PkgVersions:
         )
 
     def _get_gh_stats(self, keys_only: bool = False):
-        gh_soup = self._parse_html(self._main_request(self.github_stats_url))
+        gh_soup = self._main_request(self.github_stats_url)
         stats_chart = [
             _j
             for i in gh_soup.find_all("dl", class_="row detail-card")
@@ -1010,12 +1023,84 @@ class PkgVersions:
         """Return the initial or latest release date and version of the package."""
         return [min, max][method == max](self._version_history(), key=itemgetter(1))
 
+    def _get_total_downloads(self, return_url: bool = False) -> str:
+        downloads_soup = self._main_request(self.DOWNLOADS_API.format(self._pkg_name))
+        downloads_url, total_downloads = [
+            d.text
+            for d in downloads_soup.find_all(
+                "div", class_="MuiGrid-root MuiGrid-item MuiGrid-grid-xs-12 css-woiofv"
+            )
+        ]
+        if return_url:
+            return downloads_url
+        if (int_downloads := int(clean(total_downloads))) >= int(1e6):
+            return f"{abbreviate_number(int_downloads)} ({total_downloads})"
+        return total_downloads
+
+    def _get_downloads_history(self):
+        downloads_soup = self._main_request(self.DOWNLOADS_API.format(self._pkg_name))
+        soup_unpacker = lambda *args, **kwargs: [
+            i.text for i in downloads_soup.find_all(*args, **kwargs)
+        ]
+        version_columns = soup_unpacker(
+            "th",
+            class_="MuiTableCell-root MuiTableCell-head MuiTableCell-stickyHeader MuiTableCell-sizeMedium css-8coetn",
+        )[1:]
+
+        downloads_history = soup_unpacker(
+            "td",
+            class_="MuiTableCell-root MuiTableCell-body MuiTableCell-sizeMedium css-q34dxg",
+        )
+        dh_dict = {}
+        date = None
+        search_compiler = partial(search, compiler=True)
+        for d in downloads_history:
+            search_func = partial(search_compiler, obj=d)
+            if search_func("-"):
+                date = d
+                dh_dict[date] = []
+            else:
+                d = int(clean(d))
+                dh_dict[date].append(d)
+        total_downloads = soup_unpacker(
+            "td",
+            class_="MuiTableCell-root MuiTableCell-body MuiTableCell-alignRight MuiTableCell-sizeMedium css-1i36psw",
+        )[1::2]
+        return {
+            k: {
+                "versions": dict(
+                    zip(
+                        (
+                            self.parse_version(i)
+                            if search_compiler(r"^(?!.*\*).*$", i)
+                            else i
+                            for i in version_columns
+                        ),
+                        v,
+                    )
+                ),
+                "sum": (f"{sum_v:,}", abbreviate_number(sum_v))
+                if (sum_v := sum(v)) >= (million := int(1e6))
+                else sum_v,
+                "total_downloads": (td, abbreviate_number(td))
+                if (td := int(total_downloads[idx])) >= million
+                else td,
+            }
+            for idx, (k, v) in enumerate(dh_dict.items())
+        }
+
     @property
     def version_history(self) -> Generator[DateTimeAndVersion, Any, None]:
         """Cached property containing the version history of the specified package."""
         if self._vhistory is None:
             self._vhistory = self._version_history()
         return self._vhistory
+
+    @property
+    def downloads_history(self) -> dict[str, dict[str, Any]]:
+        if self._dhistory is None:
+            self._dhistory = self._get_downloads_history()
+        return self._dhistory
 
     @property
     def initial_version(self) -> TupleDoubleStr:
@@ -1037,20 +1122,34 @@ class PkgVersions:
         return self.__sizeof__()
 
     @property
+    def total_downloads(self) -> str:
+        return self._get_total_downloads()
+
+    @property
     def github_stats(self):
         if self._gh_stats is None:
             self._gh_stats = self._get_gh_stats()
         return self._gh_stats
 
     @property
-    def package_url(self):
+    def package_url(self) -> str:
+        if self._pkg_path and self._pkg_url is None:
+            self._pkg_url = self._pkg_path.removesuffix("#history")
         return self._pkg_url
 
     @property
-    def github_stats_url(self):
-        return self._validate_package(
-            self._pkg_name, self.STATS_API, package_manager=self._pkg_manager
-        )
+    def github_stats_url(self) -> str:
+        if self._pkg_name and self._gh_url is None:
+            self._gh_url = self._validate_package(
+                self._pkg_name, self.STATS_API, package_manager=self._pkg_manager
+            )
+        return self._gh_url
+
+    @property
+    def downloads_url(self) -> str:
+        if self._pkg_name and self._downloads_url is None:
+            self._downloads_url = self._get_total_downloads(return_url=True)
+        return self._downloads_url
 
     @_DateTimeVersions.operator_handler("==", version_only=True)
     def is_latest(self, other_py: PackageVersion) -> bool:

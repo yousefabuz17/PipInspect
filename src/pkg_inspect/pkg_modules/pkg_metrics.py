@@ -138,7 +138,7 @@ class PkgMetrics(Iterable):
         self, path: PathOrStr = None, keys_only: bool = False
     ) -> dict[str, IntOrFloat]:
         if not path:
-            path = DUMMY_FILE
+            path = DUMMY_PATH
         stats_results = self._path_stats(path, stats_results=True)
         metric_keys = set(k for k in dir(stats_results) if k.startswith("st"))
 

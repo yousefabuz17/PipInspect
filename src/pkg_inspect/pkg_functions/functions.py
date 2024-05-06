@@ -120,10 +120,10 @@ def inspect_package(
 def pkg_version_compare(
     package: str,
     first_pyversion: str,
-    other_pyversion,
+    other_pyversion: str,
     /,
     *,
-    item: str,
+    itemOrfile: str,
     opmethod: str = None,
 ):
     """
@@ -135,7 +135,7 @@ def pkg_version_compare(
 
     """
     return _PkgI(package, first_pyversion).version_compare(
-        other_pyversion, item, opmethod=opmethod
+        other_pyversion, itemOrfile, opmethod=opmethod
     )
 
 
