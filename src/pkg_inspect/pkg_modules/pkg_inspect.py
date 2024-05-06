@@ -82,7 +82,7 @@ class _PkgInspect:
     @staticmethod
     def _fix_pkgname(pkg_name: str = None) -> str:
         if pkg_name:
-            return stranslate(pkg_name, "_", "-")
+            return stranslate(pkg_name, "-", "_")
 
     @classmethod
     @exception_handler("site-path version number", exceptions=StopIteration)
@@ -253,7 +253,9 @@ class _PkgInspect:
 
         """
         py_version: PackageVersion = self._check_version(py_version)
+        # print(package_name)
         package_name: str = self._fix_pkgname(package_name)
+        # print(package_name)
         try:
             # Check if the package is found in the specified Python version
             return next(
