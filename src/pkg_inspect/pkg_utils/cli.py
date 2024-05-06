@@ -122,3 +122,6 @@ def cli_parser(current_version: PackageVersion):
             itemOrfile=args.item,
             opmethod=args.opmethod,
         )
+
+
+__all__ = "cli_parser"
