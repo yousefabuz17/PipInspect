@@ -25,7 +25,25 @@ versions, and retrieve information from Python installations.
 
 from ..pkg_modules import PkgInspect, PkgVersions
 from ..pkg_utils.exception import PkgException, RedPkgE
-from ..pkg_utils.utils import *
+from ..pkg_utils.util_types import (
+    DateTimeAndVersion,
+    Iterable,
+    PyPIOptionsT,
+    TupleOfPkgVersions,
+    Union,
+)
+from ..pkg_utils.utils import (
+    BASE_EXCEPTIONS,
+    alter_if_string,
+    filter_empty,
+    find_best_match,
+    get_properties,
+    has_decorators,
+    is_class,
+    is_function,
+    partial,
+    wraps,
+)
 
 
 _PkgI: PkgInspect = partial(PkgInspect, generator=False)

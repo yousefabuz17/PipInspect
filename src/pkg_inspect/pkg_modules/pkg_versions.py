@@ -600,7 +600,6 @@ class PkgVersions:
                 - `1`: Sort the version history by the package versions.
                 - `reverse`: Reverse the sorting order.
             - Defaults to 'versions'.
-        - `generator` (bool, optional): Whether to return the version history as a generator. Defaults to True.
 
     ### Attributes:
         - `API` (str): The API endpoint for fetching package versions.
@@ -665,6 +664,8 @@ class PkgVersions:
         "_gh_url",
         "_downloads_url",
         "_dhistory",
+        "_tdownloads",
+        "_tversions",
     )
 
     def __init__(
@@ -689,6 +690,8 @@ class PkgVersions:
         self._latest = None  # Latest Version
         self._gh_stats = None  # GitHub Stats
         self._dhistory = None  # Downloads History
+        self._tdownloads = None  # Total Downloads
+        self._tversions = None  # Total Versions
 
         # URL Properties
         self._pkg_url = None
@@ -1119,11 +1122,15 @@ class PkgVersions:
     @property
     def total_versions(self) -> int:
         """Return the total number of versions in the version history."""
-        return self.__sizeof__()
+        if self._tversions is None:
+            self._tversions = self.__sizeof__()
+        return self._tversions
 
     @property
     def total_downloads(self) -> str:
-        return self._get_total_downloads()
+        if self._downloads_url is None:
+            self._downloads_url = self._get_total_downloads()
+        return self._downloads_url
 
     @property
     def github_stats(self):

@@ -1,3 +1,4 @@
+from .metadata import __version__
 from .utils import DUMMY_PATH, Any, PathOrStr, PackageVersion, CallableT, iread, partial
 from ..pkg_functions.functions import (
     INSPECTION_FIELDS,
@@ -12,17 +13,16 @@ from ..pkg_functions.functions import (
 from argparse import ArgumentParser
 
 
-def cli_parser(current_version: PackageVersion):
+def cli_parser(__current_version: PackageVersion = __version__):
     """Command-line interface for 'pkg_inspect'."""
-    
+
     # Functions for the CLI
     def _read(fp: PathOrStr) -> str:
         return iread(DUMMY_PATH / fp)
 
     def _store_true(func: CallableT, *args, **kwargs) -> partial[Any]:
         return partial(func, *args, action="store_true", **kwargs)
-    
-    
+
     # Default Argument Parser
     arg_parser = ArgumentParser(description="Command-line interface for 'pkg_inspect'")
     sub_parsers = arg_parser.add_subparsers(dest="command", help="All Command Options.")
@@ -55,13 +55,17 @@ def cli_parser(current_version: PackageVersion):
     ipypi_add("-item", help="Choose an 'itemOrfile' to inspect.")
 
     # Retrieve Version Packages
-    gvps = sub_parsers.add_parser("get-version-packages", help="Retrieve version packages.")
+    gvps = sub_parsers.add_parser(
+        "get-version-packages", help="Retrieve version packages."
+    )
     gvps_true = _store_true((gvps_add := gvps.add_argument))
     gvps_true("--gvpdoc", help="Display the documentation of 'get_version_packages'.")
     gvps_add("-pyver", help="Choose a python version to inspect.")
 
     # Retrieve Available Updates
-    gaup = sub_parsers.add_parser("get-available-updates", help="Retrieve available updates.")
+    gaup = sub_parsers.add_parser(
+        "get-available-updates", help="Retrieve available updates."
+    )
     gaup_true = _store_true((gaup_add := gaup.add_argument))
     gaup_true("--gaupdoc", help="Display the documentation of 'get_available_updates'.")
     gaup_true("--include-betas", help="A flag to include beta versions.")
@@ -93,7 +97,7 @@ def cli_parser(current_version: PackageVersion):
     elif args.source:
         return _read("src/pkg_inspect/pkg_modules/pkg_inspect.py")
     elif args.version:
-        return current_version
+        return __current_version
     elif args.command == "inspect-package":
         if args.ipdoc:
             return inspect_package.__doc__
@@ -125,3 +129,7 @@ def cli_parser(current_version: PackageVersion):
 
 
 __all__ = "cli_parser"
+
+
+if __name__ == "__main__":
+    print(cli_parser())

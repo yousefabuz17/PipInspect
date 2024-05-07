@@ -2,7 +2,32 @@ import shutil
 
 from .pkg_versions import _DateTime
 from ..pkg_utils.exception import PkgException
-from ..pkg_utils.utils import *
+from ..pkg_utils.utils import (
+    DUMMY_PATH,
+    PathOrStr,
+    bytes_converter,
+    cached_property,
+    exception_handler,
+    executor,
+    exporter,
+    get_package_name,
+    os,
+    partial,
+    subclass,
+    validate_file,
+)
+from ..pkg_utils.util_types import (
+    IntOrFloat,
+    IntOrFloatOrStr,
+    Iterable,
+    IterablePath,
+    IterablePathOrStr,
+    Iterator,
+    NamedTuple,
+    OStatResult,
+    Union,
+)
+
 
 os_exception_handler = partial(
     exception_handler, item="OS Stats", exceptions=(OSError, OverflowError)
@@ -52,7 +77,7 @@ class PkgMetrics(Iterable):
         # Attributes
         self._all_stats = None
 
-    def __iter__(self) -> Iterator[tuple[str, namedtuple]]:
+    def __iter__(self) -> Iterator[tuple[str, NamedTuple]]:
         """Returns an iterator for the dataset statistics."""
         return iter(self.all_metric_stats.items())
 

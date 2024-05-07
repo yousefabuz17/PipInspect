@@ -450,7 +450,7 @@ class PkgInspect(_PkgInspect):
 
     def __pipv(self) -> PkgV:
         if self.__validate_pkg():
-            return PkgV(package=self._pkg, generator=self._generator)
+            return PkgV(package=self._pkg)
 
     def __validate_pkg(self) -> Union[str, NoReturn]:
         self.__check_attrs()
@@ -742,8 +742,8 @@ class PkgInspect(_PkgInspect):
 
         # All options for inspection fields
         insp_fields: tuple[str] = (
-            empty := "",
-            sp := "site_path",
+            (empty := ""),
+            (sp := "site_path"),
             *METADATA_FIELDS,
             *(shorts := ("short_license", "short_meta")),
             *(pkgv_props := (*get_properties(PkgV), *(gh_keys := PkgV.gh_stat_keys()))),
@@ -756,7 +756,7 @@ class PkgInspect(_PkgInspect):
             ),
             *(
                 pkgm_props := (
-                    di := "date_installed",
+                    (di := "date_installed"),
                     *get_properties(PkgM),
                     *(st_fields := self.__pipm().get_metrickeys),
                 )
@@ -764,7 +764,7 @@ class PkgInspect(_PkgInspect):
             *(
                 pkgi_props := (
                     *{
-                        gvp := "get_version_packages",
+                        (gvp := "get_version_packages"),
                         *get_properties(PkgInspect),
                         *(__pkgi_props := (*get_properties(__pkgi := _PkgInspect),)),
                     },
@@ -782,7 +782,6 @@ class PkgInspect(_PkgInspect):
         )
 
         _item: Optional[Any] = find_best_match(itemOrfile, insp_fields)
-
         if itemOrfile == empty or _item == "get_fieldnames":
             # Return the metadata fields if no item is specified
             return filter_empty(insp_fields)
