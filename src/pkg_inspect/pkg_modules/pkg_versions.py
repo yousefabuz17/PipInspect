@@ -966,7 +966,7 @@ class PkgVersions:
             if search(self.VERSION_PATTERN, rd := i.get_text(strip=True))
         )
 
-    def _get_gh_stats(self, keys_only: bool = False):
+    def _get_gh_stats(self):
         gh_soup = self._main_request(self.github_stats_url)
         stats_chart = [
             _j
@@ -990,18 +990,16 @@ class PkgVersions:
                     and search("|".join(map(re.escape, UNITS)), v, compiler=True)
                     else v
                     for k, v in zip(flat_stats[::2], flat_stats[1::2])
-                    if best_match(k, GH_STATS)
+                    if best_match(k, self.gh_stat_keys())
                 }
             except BASE_EXCEPTIONS:
                 ...
 
-        if all((keys_only, gh_stats)):
-            return (*sorted(gh_stats),)
         return gh_stats
 
-    @classmethod
-    def gh_stat_keys(cls) -> tuple[str]:
-        return cls(package=DUMMY_PKGNAME)._get_gh_stats(keys_only=True) or GH_STATS
+    @staticmethod
+    def gh_stat_keys() -> tuple[str]:
+        return (*sorted(GH_STATS),)
 
     def _version_history(self) -> Generator[DateTimeAndVersion, None, None]:
         @exception_handler(item=f"{self._pkg_path!r}", exceptions=TimeoutError)

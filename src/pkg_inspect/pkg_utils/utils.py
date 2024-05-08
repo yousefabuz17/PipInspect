@@ -67,20 +67,12 @@ from .util_types import (
 )
 
 
-try:
-    import pypistats
-except ModuleNotFoundError:
-    ...
-
-
 # MARK: - Constants, Variables, Functions and Exception Handling
 
-# Default 'DUMMY' values to be used for extracting
+# Default 'DUMMY' object (Main Directory) to be used for extracting
 #   1. package metadata
 #   2. Distribution Information
-#   3. GitHub Statistics
-DUMMY_PATH: Path = Path(__file__).parents[3]  # Main Directory
-DUMMY_PKGNAME: str = "requests"
+DUMMY_PATH: Path = Path(__file__).parents[3]
 
 
 # Field names and custom types to extract

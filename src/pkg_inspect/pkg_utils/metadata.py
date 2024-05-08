@@ -3,7 +3,7 @@ from ..pkg_modules.pkg_versions import PkgVersions
 
 
 # Current Version
-__version__: PackageVersion = PkgVersions.parse_version("0.1.8")
+__version__: PackageVersion = PkgVersions.parse_version("0.1.9")
 
 
 # Package Metadata

@@ -28,6 +28,8 @@ from ..pkg_utils.exception import PkgException, RedPkgE
 from ..pkg_utils.util_types import (
     DateTimeAndVersion,
     Iterable,
+    Literal,
+    Optional,
     PyPIOptionsT,
     TupleOfPkgVersions,
     Union,
@@ -35,6 +37,7 @@ from ..pkg_utils.util_types import (
 from ..pkg_utils.utils import (
     BASE_EXCEPTIONS,
     alter_if_string,
+    equal_,
     filter_empty,
     find_best_match,
     get_properties,
@@ -46,30 +49,18 @@ from ..pkg_utils.utils import (
 )
 
 
+# region Constants
+# - PkgInspect partial function to disable the 'generator' attribute
 _PkgI: PkgInspect = partial(PkgInspect, generator=False)
+
+# - Tuple of available fieldnames for inspection
+INSPECTION_FIELDS: tuple[str] = _PkgI().get_fieldnames
+
+# - Tuple of 'PkgVersions' properties for inspections
 _PKGV_PROPS: tuple[str] = (*get_properties(PkgVersions),)
 
 
-# Constants - Tuple of available fieldnames for inspection
-INSPECTION_FIELDS: tuple[str] = _PkgI().get_fieldnames
-
-
-def __valid_option(
-    item: str,
-    choices: Iterable = None,
-    extras: Iterable = None,
-    return_choices: bool = False,
-):
-    """Check if the specified item is a valid option for inspection."""
-    c: Union[None, tuple[str]] = alter_if_string(choices) or _PKGV_PROPS
-    if extras:
-        c += alter_if_string(extras)
-    option = find_best_match(item, c)
-    if return_choices:
-        return c, option
-    return option
-
-
+# region FuncDecorators
 def __doc_handler(
     cls: Union[object, str] = None, func_name: str = None, add_doc: bool = True
 ):
@@ -98,13 +89,37 @@ def __doc_handler(
     return decorator
 
 
+def __prettyprint():
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            pp = kwargs.pop("format", "")
+            f = func(*args, **kwargs)
+            if pp in (True, "pretty"):
+                from pprint import pprint
+
+                pprint(f)
+                f = ""
+            return f
+
+        return wrapper
+
+    return decorator
+
+
+# endregion
+
+
+# region InspectFuncs
 @__doc_handler()
+@__prettyprint()
 def inspect_package(
     package: str = None,
     pyversion: str = None,
     *,
     itemOrfile: str = "",
     package_manager: str = None,
+    format: Optional[Literal["pretty"]] = "",
 ):
     """
     Inspect a local or PyPI package and return the requested `itemOrfile`.
@@ -134,55 +149,14 @@ def inspect_package(
             )
 
 
-@__doc_handler(func_name="version_compare")
-def pkg_version_compare(
-    package: str,
-    first_pyversion: str,
-    other_pyversion: str,
-    /,
-    *,
-    itemOrfile: str,
-    opmethod: str = None,
-):
-    """
-    Compare the items of a package between two different python versions.
-
-    - If the `opmethod` is not provided, the function will return the items from both versions.
-
-    - Please refer to the `pkg_version_compare.__doc__` for more information on comparing package data between Python versions.
-
-    """
-    return _PkgI(package, first_pyversion).version_compare(
-        other_pyversion, itemOrfile, opmethod=opmethod
-    )
-
-
-@__doc_handler()
-def get_version_packages(pyversion: str) -> DateTimeAndVersion:
-    """
-    Get all the packages installed in a python version.
-
-    - Please refer to the `get_version_packages.__doc__` for more information on retrieving installed packages.
-    """
-    return _PkgI(pyversion=pyversion).get_version_packages()
-
-
-@__doc_handler(func_name="installed_pythons")
-def get_installed_pythons() -> TupleOfPkgVersions:
-    """
-    Get all the installed python versions on the system.
-
-    - Please refer to the `get_installed_pythons.__doc__` for more information on retrieving installed Python versions.
-    """
-    return _PkgI().installed_pythons
-
-
 @__doc_handler(add_doc=False)
+@__prettyprint()
 def inspect_pypi(
     package: str,
     package_manager: str = None,
     *,
     item: PyPIOptionsT = "",
+    format: Optional[Literal["pretty"]] = "",
 ) -> Union[int, DateTimeAndVersion, dict[str, DateTimeAndVersion]]:
     """
     Inspect a package on (`https://pypi.org/`) and (`https://libraries.io/`)
@@ -266,16 +240,13 @@ def inspect_pypi(
             "The 'package' argument is required to inspect a package on PyPI."
         )
 
-    _options, _item = __valid_option(
-        item,
-        extras=(
-            _empty := "",
-            _all_items_str := "all_items",
-            _gh_str := "github_stats",
-            *(gh_stat_keys := PkgVersions.gh_stat_keys()),
-        ),
-        return_choices=True,
+    _options = (
+        *_PKGV_PROPS,
+        (_all_items_str := "all_items"),
+        (_gh_str := "github_stats"),
+        *(gh_stat_keys := PkgVersions.gh_stat_keys()),
     )
+    _item = find_best_match(item, _options)
     options = filter_empty(_options)
 
     if _item is None:
@@ -286,25 +257,24 @@ def inspect_pypi(
         raise RedPkgE(
             f"The specified item {item!r} is not a valid option for inspection."
         )
-    elif _item == _empty or not any(filter_empty((item, _item))):
+    elif not any(filter_empty((item, _item))):
         # Return all available options for inspection
         # if no item is specified
         return options
 
     # Return the requested item from the package
     if all((package, _item)):
-        pypi_item = lambda it: getattr(
-            PkgVersions(package, package_manager=package_manager), it
-        )
+        def _get_item(_it):
+            return getattr(PkgVersions(package, package_manager=package_manager), _it)
 
         if _item == _all_items_str:
             # Return all available items in a dictionary format
-            return {k: pypi_item(k) for k in _PKGV_PROPS}
+            return {k: _get_item(k) for k in _PKGV_PROPS}
         elif _item in _PKGV_PROPS:
             # Return the requested item from the package
-            return pypi_item(_item)
+            return _get_item(_item)
         elif _item in (*gh_stat_keys, _gh_str):
-            get_gh_stats = lambda x=_gh_str: pypi_item(x)
+            get_gh_stats = lambda x=_gh_str: _get_item(x)
             if _item == _gh_str:
                 # Return the GitHub statistics for the package
                 return get_gh_stats()
@@ -312,9 +282,41 @@ def inspect_pypi(
             return get_gh_stats()[_item]
 
 
+# endregion
+
+
+# region GetFunctions
+@__doc_handler()
+@__prettyprint()
+def get_version_packages(
+    pyversion: str, format: Optional[Literal["pretty"]] = ""
+) -> DateTimeAndVersion:
+    """
+    Get all the packages installed in a python version.
+
+    - Please refer to the `get_version_packages.__doc__` for more information on retrieving installed packages.
+    """
+    return _PkgI(pyversion=pyversion).get_version_packages()
+
+
+@__doc_handler(func_name="installed_pythons")
+def get_installed_pythons() -> TupleOfPkgVersions:
+    """
+    Get all the installed python versions on the system.
+
+    - Please refer to the `get_installed_pythons.__doc__` for more information on retrieving installed Python versions.
+    """
+    return _PkgI().installed_pythons
+
+
 @__doc_handler(cls=PkgVersions, func_name="get_updates")
+@__prettyprint()
 def get_available_updates(
-    package: str, current_version: str = None, *, include_betas: bool = False
+    package: str,
+    current_version: str = None,
+    *,
+    format: Optional[Literal["pretty"]] = "",
+    include_betas: bool = False,
 ):
     """
     Fetch the available updates from the specified current version of the package.
@@ -333,6 +335,36 @@ def get_available_updates(
         i_pythons = _pkg_i().installed_pythons
         current_version = _pkg_i(pyversion=i_pythons[-1]).installed_version
     return PkgVersions(package).get_updates(current_version)
+
+
+# endregion
+
+
+# region OtherFuncs
+@__doc_handler(func_name="version_compare")
+def pkg_version_compare(
+    package: str,
+    first_pyversion: str,
+    other_pyversion: str,
+    /,
+    *,
+    itemOrfile: str,
+    opmethod: str = None,
+):
+    """
+    Compare the items of a package between two different python versions.
+
+    - If the `opmethod` is not provided, the function will return the items from both versions.
+
+    - Please refer to the `pkg_version_compare.__doc__` for more information on comparing package data between Python versions.
+
+    """
+    return _PkgI(package, first_pyversion).version_compare(
+        other_pyversion, itemOrfile, opmethod=opmethod
+    )
+
+
+# endregion
 
 
 __all__ = ("INSPECTION_FIELDS",) + (

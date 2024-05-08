@@ -41,6 +41,7 @@ def cli_parser(__current_version: PackageVersion = __version__):
     i_package = sub_parsers.add_parser("inspect-package", help="Inspect a package.")
     ip_true = _store_true((ip_add := i_package.add_argument))
     ip_true("--ipdoc", help="Display the documentation of 'inspect_package'.")
+    ip_true("--pretty", help="Display the item in 'pretty' format.")
     ip_add("-pkg", help="Choose a package to inspect.")
     ip_add("-pyver", help="Choose a python version to inspect.")
     ip_add("-item", help="Choose an 'itemOrfile' to inspect.")
@@ -49,6 +50,7 @@ def cli_parser(__current_version: PackageVersion = __version__):
     ipypi = sub_parsers.add_parser("inspect-pypi", help="Inspect a package on PyPI.")
     ipypi_true = _store_true((ipypi_add := ipypi.add_argument))
     ipypi_true("--ipdoc", help="Display the documentation of 'inspect_pypi'.")
+    ipypi_true("--pretty", help="Display the item in 'pretty' format.")
     ipypi_add("-pkg", help="Choose a package to inspect.")
     ipypi_add("-pyver", help="Choose a python version to inspect.")
     ipypi_add("-pkgm", help="Choose a package manager to inspect.")
@@ -60,6 +62,7 @@ def cli_parser(__current_version: PackageVersion = __version__):
     )
     gvps_true = _store_true((gvps_add := gvps.add_argument))
     gvps_true("--gvpdoc", help="Display the documentation of 'get_version_packages'.")
+    gvps_true("--pretty", help="Display the item in 'pretty' format.")
     gvps_add("-pyver", help="Choose a python version to inspect.")
 
     # Retrieve Available Updates
@@ -68,6 +71,7 @@ def cli_parser(__current_version: PackageVersion = __version__):
     )
     gaup_true = _store_true((gaup_add := gaup.add_argument))
     gaup_true("--gaupdoc", help="Display the documentation of 'get_available_updates'.")
+    gaup_true("--pretty", help="Display the item in 'pretty' format.")
     gaup_true("--include-betas", help="A flag to include beta versions.")
     gaup_add("-pkg", help="Choose a package to inspect.")
     gaup_add("-current-version", help="Choose a current version to inspect.")
@@ -101,20 +105,20 @@ def cli_parser(__current_version: PackageVersion = __version__):
     elif args.command == "inspect-package":
         if args.ipdoc:
             return inspect_package.__doc__
-        return inspect_package(args.pkg, args.pyver, itemOrfile=args.item)
+        return inspect_package(args.pkg, args.pyver, itemOrfile=args.item, format=args.pretty)
     elif args.command == "inspect-py":
         if args.pydoc:
             return inspect_pypi.__doc__
-        return inspect_pypi(args.pkg, args.pkgm, item=args.item)
+        return inspect_pypi(args.pkg, args.pkgm, item=args.item, format=args.pretty)
     elif args.command == "get-version-packages":
         if args.gvpdoc:
             return get_version_packages.__doc__
-        return get_version_packages(args.pyver)
+        return get_version_packages(args.pyver, format=args.pretty)
     elif args.command == "get-available-updates":
         if args.gaupdoc:
             return get_available_updates.__doc__
         return get_available_updates(
-            args.pkg, args.current_version, include_betas=args.include_betas
+            args.pkg, args.current_version, include_betas=args.include_betas, format=args.pretty
         )
     elif args.command == "pkg-version-compare":
         if args.pvcdoc:
@@ -129,7 +133,3 @@ def cli_parser(__current_version: PackageVersion = __version__):
 
 
 __all__ = "cli_parser"
-
-
-if __name__ == "__main__":
-    print(cli_parser())

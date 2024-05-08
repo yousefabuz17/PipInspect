@@ -805,6 +805,8 @@ class PkgInspect(_PkgInspect):
             )
             def _get_pypistat(item_obj):
                 # Return the specified item from the 'pypistats' module into a dictionary.
+                import pypistats
+
                 p_stats_json = json.loads(
                     getattr(pypistats, item_obj)(self._pkg, format="json")
                 )
