@@ -264,6 +264,7 @@ def inspect_pypi(
 
     # Return the requested item from the package
     if all((package, _item)):
+
         def _get_item(_it):
             return getattr(PkgVersions(package, package_manager=package_manager), _it)
 

@@ -105,7 +105,9 @@ def cli_parser(__current_version: PackageVersion = __version__):
     elif args.command == "inspect-package":
         if args.ipdoc:
             return inspect_package.__doc__
-        return inspect_package(args.pkg, args.pyver, itemOrfile=args.item, format=args.pretty)
+        return inspect_package(
+            args.pkg, args.pyver, itemOrfile=args.item, format=args.pretty
+        )
     elif args.command == "inspect-py":
         if args.pydoc:
             return inspect_pypi.__doc__
@@ -118,7 +120,10 @@ def cli_parser(__current_version: PackageVersion = __version__):
         if args.gaupdoc:
             return get_available_updates.__doc__
         return get_available_updates(
-            args.pkg, args.current_version, include_betas=args.include_betas, format=args.pretty
+            args.pkg,
+            args.current_version,
+            include_betas=args.include_betas,
+            format=args.pretty,
         )
     elif args.command == "pkg-version-compare":
         if args.pvcdoc:
