@@ -1034,7 +1034,7 @@ class PkgVersions:
         ]
         if return_url:
             return downloads_url
-        if (int_downloads := int(clean(total_downloads))) >= int(1e6):
+        if (int_downloads := int(clean(total_downloads, ","))) >= int(1e6):
             return f"{abbreviate_number(int_downloads)} ({total_downloads})"
         return total_downloads
 

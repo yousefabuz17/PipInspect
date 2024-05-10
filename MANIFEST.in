@@ -11,5 +11,5 @@ recursive-include src/pkg_inspect/pkg_utils *.py
 # Include tests
 recursive-include tests *.py
 
-# Exclude unwanted files (example)
+# Exclude unwanted files
 global-exclude __pycache__ *.pyc *.pyo

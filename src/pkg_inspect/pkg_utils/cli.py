@@ -1,5 +1,5 @@
-from .metadata import __version__
-from .utils import DUMMY_PATH, Any, PathOrStr, PackageVersion, CallableT, iread, partial
+from .metadata import __version__ as __current_version
+from .utils import DUMMY_PATH, Any, CallableT, PathOrStr, iread, partial
 from ..pkg_functions.functions import (
     INSPECTION_FIELDS,
     get_available_updates,
@@ -13,7 +13,7 @@ from ..pkg_functions.functions import (
 from argparse import ArgumentParser
 
 
-def cli_parser(__current_version: PackageVersion = __version__):
+def cli_parser():
     """Command-line interface for 'pkg_inspect'."""
 
     # Functions for the CLI
@@ -37,7 +37,7 @@ def cli_parser(__current_version: PackageVersion = __version__):
     ap_true("--version", help="Display the current version of 'pkg_inspect'.")
     ap_true("--installed-pythons", help="Display all installed python versions.")
 
-    # Inspect Package
+    # region Inspect Package
     i_package = sub_parsers.add_parser("inspect-package", help="Inspect a package.")
     ip_true = _store_true((ip_add := i_package.add_argument))
     ip_true("--ipdoc", help="Display the documentation of 'inspect_package'.")
@@ -46,7 +46,7 @@ def cli_parser(__current_version: PackageVersion = __version__):
     ip_add("-pyver", help="Choose a python version to inspect.")
     ip_add("-item", help="Choose an 'itemOrfile' to inspect.")
 
-    # Inspect PyPI
+    # region Inspect PyPI
     ipypi = sub_parsers.add_parser("inspect-pypi", help="Inspect a package on PyPI.")
     ipypi_true = _store_true((ipypi_add := ipypi.add_argument))
     ipypi_true("--ipdoc", help="Display the documentation of 'inspect_pypi'.")
@@ -56,7 +56,7 @@ def cli_parser(__current_version: PackageVersion = __version__):
     ipypi_add("-pkgm", help="Choose a package manager to inspect.")
     ipypi_add("-item", help="Choose an 'itemOrfile' to inspect.")
 
-    # Retrieve Version Packages
+    # region Version Packages
     gvps = sub_parsers.add_parser(
         "get-version-packages", help="Retrieve version packages."
     )
@@ -64,8 +64,17 @@ def cli_parser(__current_version: PackageVersion = __version__):
     gvps_true("--gvpdoc", help="Display the documentation of 'get_version_packages'.")
     gvps_true("--pretty", help="Display the item in 'pretty' format.")
     gvps_add("-pyver", help="Choose a python version to inspect.")
+    
+    pvc = sub_parsers.add_parser("pkg-version-compare", help="")
+    pvc_true = _store_true((pvc_add := pvc.add_argument))
+    pvc_true("--pvcdoc", help="Display the documentation of 'pkg_version_compare'.")
+    pvc_add("-pkg", help="Choose a package to inspect.")
+    pvc_add("-fpyver", help="Choose the first python version to inspect.")
+    pvc_add("-opyver", help="Choose the second python version to inspect.")
+    pvc_add("-item", help="Choose an 'itemOrfile' to inspect.")
+    pvc_add("-opmethod", help="Choose an 'opmethod' to use.")
 
-    # Retrieve Available Updates
+    # region Available Updates
     gaup = sub_parsers.add_parser(
         "get-available-updates", help="Retrieve available updates."
     )
@@ -75,16 +84,6 @@ def cli_parser(__current_version: PackageVersion = __version__):
     gaup_true("--include-betas", help="A flag to include beta versions.")
     gaup_add("-pkg", help="Choose a package to inspect.")
     gaup_add("-current-version", help="Choose a current version to inspect.")
-
-    # Compare Version Packages
-    pvc = sub_parsers.add_parser("pkg-version-compare", help="")
-    pvc_true = _store_true((pvc_add := pvc.add_argument))
-    pvc_true("--pvcdoc", help="Display the documentation of 'pkg_version_compare'.")
-    pvc_add("-pkg", help="Choose a package to inspect.")
-    pvc_add("-fpyver", help="Choose the first python version to inspect.")
-    pvc_add("-opyver", help="Choose the second python version to inspect.")
-    pvc_add("-item", help="Choose an 'itemOrfile' to inspect.")
-    pvc_add("-opmethod", help="Choose an 'opmethod' to use.")
 
     # Parse Arguments
     args = arg_parser.parse_args()
