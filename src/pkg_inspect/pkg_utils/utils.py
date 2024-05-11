@@ -178,6 +178,9 @@ LONG_TIMEOUT: int = 900  # 15 minutes
 # Unit Measurement Keys
 # ---------------------
 UNITS: tuple[str] = ("KB", "MB", "GB", "TB")
+MILLION: int = 1_000_000
+BILLION: int = 1_000_000_000
+TRILLION: int = 1_000_000_000_000
 
 
 # region OperatorUtils
@@ -1357,7 +1360,10 @@ def remove_prefix(s: str, prefix: str) -> str:
     """
     try:
         return s.removeprefix(prefix)
-    except (*BASE_EXCEPTIONS, AttributeError,):
+    except (
+        *BASE_EXCEPTIONS,
+        AttributeError,
+    ):
         return s[s.startswith(prefix) and len(prefix) :]
 
 
@@ -1468,15 +1474,13 @@ def abbreviate_number(num: Union[int, str]):
     """Converts a large number into an abbreviated form with common terms like Thousand, Million, Billion, etc."""
     # Remove commas and convert to integer
     if isinstance(num, str):
-        num = int(clean(num))
+        num = int(clean(num, ",_"))
 
     # Define abbreviations and their respective scales
-    global million, billion, trillion
-    
     abbrevs = (
-        ((trillion := 1_000_000_000_000), "Trillion"),
-        ((billion := 1_000_000_000), "Billion"),
-        ((million := 1_000_000), "Million"),
+        (TRILLION, "Trillion"),
+        (BILLION, "Billion"),
+        (MILLION, "Million"),
     )
 
     for scale, abbrev in abbrevs:
@@ -1527,11 +1531,13 @@ async def url_request(url: PathOrStr, **kwargs) -> Union[str, Any]:
 
 # endregion
 
-__all__ = tuple(
-    k
-    for k, v in globals().items()
-    # Constants, not private, and is a class
-    if any((k.isupper(), not k.startswith("_"), is_class(k), k in ("million", "billion", "trillion")))
-    # Functions and not decorators
-    and any((is_function(v), not has_decorators(v, "_cached_property")))
+__all__ = ("MILLION", "BILLION", "TRILLION") + (
+    *(
+        k
+        for k, v in globals().items()
+        # Constants, not private, and is a class
+        if any((k.isupper(), not k.startswith("_"), is_class(k)))
+        # Functions and not decorators
+        and any((is_function(v), not has_decorators(v, "_cached_property")))
+    ),
 )

@@ -3,11 +3,11 @@ from ..pkg_modules.pkg_versions import PkgVersions
 
 
 # Current Version
-__version__: PackageVersion = PkgVersions.parse_version("0.2.2")
+__version__: PackageVersion = PkgVersions.parse_version("0.2.3")
 
 
 # Package Metadata
-__author__ = "Yousef Abuzahrieh <yousef.zahrieh17@gmail.com"
+__author__ = "Yousef Abuzahrieh <yousef.zahrieh17@gmail.com>"
 __copyright__ = f"Copyright © 2024, {__author__}"
 __license__ = "Apache License, Version 2.0"
 __summary__ = "A package for inspecting Python packages and their versions."

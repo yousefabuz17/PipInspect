@@ -1,4 +1,4 @@
-from .metadata import __version__ as __current_version
+from .metadata import __author__, __copyright__, __license__, __summary__, __url__, __version__
 from .utils import DUMMY_PATH, Any, CallableT, PathOrStr, iread, partial
 from ..pkg_functions.functions import (
     INSPECTION_FIELDS,
@@ -29,13 +29,18 @@ def cli_parser():
 
     # Main Commands
     ap_true = _store_true(arg_parser.add_argument)
-    ap_true("--doc", help="Display the README.md file.")
-    ap_true("--license", help="Display the LICENSE.md file.")
+    ap_true("--author", help="Display the author of 'pkg_inspect'.")
+    ap_true("--copyright", help="Display the copyright of 'pkg_inspect'.")
+    ap_true("--doc", help="Display the README.md file of 'pkg_inspect'.")
+    ap_true("--license", help="Display the LICENSE.md file of 'pkg_inspect'.")
+    ap_true("--license-type", help="Display the license type of 'pkg_inspect'.")
     ap_true("--options", help="Display all possible inspections options.")
-    ap_true("--req", help="Display the requirements.txt file.")
+    ap_true("--req", help="Display the requirements.txt file of 'pkg_inspect'.")
+    ap_true("--summary", help="Display the summary of 'pkg_inspect'.")
     ap_true("--source", help="Display the source code of 'pkg_inspect'.")
+    ap_true("--url", help="Display the URL of 'pkg_inspect'.")
     ap_true("--version", help="Display the current version of 'pkg_inspect'.")
-    ap_true("--installed-pythons", help="Display all installed python versions.")
+    ap_true("--installed-pythons", help="Display all installed python versions on the running system.")
 
     # region Inspect Package
     i_package = sub_parsers.add_parser("inspect-package", help="Inspect a package.")
@@ -49,7 +54,7 @@ def cli_parser():
     # region Inspect PyPI
     ipypi = sub_parsers.add_parser("inspect-pypi", help="Inspect a package on PyPI.")
     ipypi_true = _store_true((ipypi_add := ipypi.add_argument))
-    ipypi_true("--ipdoc", help="Display the documentation of 'inspect_pypi'.")
+    ipypi_true("--pydoc", help="Display the documentation of 'inspect_pypi'.")
     ipypi_true("--pretty", help="Display the item in 'pretty' format.")
     ipypi_add("-pkg", help="Choose a package to inspect.")
     ipypi_add("-pyver", help="Choose a python version to inspect.")
@@ -87,27 +92,40 @@ def cli_parser():
 
     # Parse Arguments
     args = arg_parser.parse_args()
-    if args.doc:
+    # region StoreTrue
+    if args.author:
+        return __author__
+    elif args.copyright:
+        return __copyright__
+    elif args.doc:
         return _read("README.md")
     elif args.installed_pythons:
         return get_installed_pythons()
     elif args.license:
         return _read("LICENSE.md")
+    elif args.license_type:
+        return __license__
     elif args.options:
         return INSPECTION_FIELDS
     elif args.req:
         return _read("src/requirements.txt")
     elif args.source:
         return _read("src/pkg_inspect/pkg_modules/pkg_inspect.py")
+    elif args.summary:
+        return __summary__
+    elif args.url:
+        return __url__
     elif args.version:
-        return __current_version
+        return __version__
+    
+    # region SubParsers
     elif args.command == "inspect-package":
         if args.ipdoc:
             return inspect_package.__doc__
         return inspect_package(
             args.pkg, args.pyver, itemOrfile=args.item, format=args.pretty
         )
-    elif args.command == "inspect-py":
+    elif args.command == "inspect-pypi":
         if args.pydoc:
             return inspect_pypi.__doc__
         return inspect_pypi(args.pkg, args.pkgm, item=args.item, format=args.pretty)
@@ -134,6 +152,7 @@ def cli_parser():
             itemOrfile=args.item,
             opmethod=args.opmethod,
         )
+    # endregion
 
 
 __all__ = "cli_parser"

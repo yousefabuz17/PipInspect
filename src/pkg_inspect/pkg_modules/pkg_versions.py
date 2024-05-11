@@ -1030,7 +1030,7 @@ class PkgVersions:
         )
         if return_url:
             return downloads_url
-        
+
         try:
             _url, total_downloads = [
                 d.text
@@ -1043,7 +1043,7 @@ class PkgVersions:
             s = "url-webpage" if return_url else "total-downloads"
             raise PkgException(f"Failed to retrieve the {s} from {downloads_url!r}.")
 
-        if (int_downloads := int(clean(total_downloads, ","))) >= million:
+        if (int_downloads := int(clean(total_downloads, ","))) >= MILLION:
             return f"{abbreviate_number(int_downloads)} ({total_downloads})"
         return total_downloads
 
@@ -1090,10 +1090,10 @@ class PkgVersions:
                     )
                 ),
                 "sum": (f"{sum_v:,}", abbreviate_number(sum_v))
-                if (sum_v := sum(v)) >= million
+                if (sum_v := sum(v)) >= MILLION
                 else sum_v,
                 "total_downloads": (td, abbreviate_number(td))
-                if (td := int(total_downloads[idx])) >= million
+                if (td := int(total_downloads[idx])) >= MILLION
                 else td,
             }
             for idx, (k, v) in enumerate(dh_dict.items())
