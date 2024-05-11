@@ -1025,16 +1025,25 @@ class PkgVersions:
         return [min, max][method == max](self._version_history(), key=itemgetter(1))
 
     def _get_total_downloads(self, return_url: bool = False) -> str:
-        downloads_soup = self._main_request(self.DOWNLOADS_API.format(self._pkg_name))
-        downloads_url, total_downloads = [
-            d.text
-            for d in downloads_soup.find_all(
-                "div", class_="MuiGrid-root MuiGrid-item MuiGrid-grid-xs-12 css-woiofv"
-            )
-        ]
+        downloads_soup = self._main_request(
+            (downloads_url := self.DOWNLOADS_API.format(self._pkg_name))
+        )
         if return_url:
             return downloads_url
-        if (int_downloads := int(clean(total_downloads, ","))) >= int(1e6):
+        
+        try:
+            _url, total_downloads = [
+                d.text
+                for d in downloads_soup.find_all(
+                    "div",
+                    class_="MuiGrid-root MuiGrid-item MuiGrid-grid-xs-12 css-woiofv",
+                )
+            ]
+        except ValueError:
+            s = "url-webpage" if return_url else "total-downloads"
+            raise PkgException(f"Failed to retrieve the {s} from {downloads_url!r}.")
+
+        if (int_downloads := int(clean(total_downloads, ","))) >= million:
             return f"{abbreviate_number(int_downloads)} ({total_downloads})"
         return total_downloads
 
@@ -1081,7 +1090,7 @@ class PkgVersions:
                     )
                 ),
                 "sum": (f"{sum_v:,}", abbreviate_number(sum_v))
-                if (sum_v := sum(v)) >= (million := int(1e6))
+                if (sum_v := sum(v)) >= million
                 else sum_v,
                 "total_downloads": (td, abbreviate_number(td))
                 if (td := int(total_downloads[idx])) >= million
@@ -1200,7 +1209,7 @@ class PkgVersions:
             # Print a warning message if no updates are found
             # or if the specified version is the latest version.
             print(
-                f"\033[1;33mNo updates were found. The specified version ({current_v!r}) appears to be the latest.\033[0m"
+                f"\033[1;33mNo updates were found. ({current_v!r}) appears to be the latest.\033[0m"
             )
         return updates
 

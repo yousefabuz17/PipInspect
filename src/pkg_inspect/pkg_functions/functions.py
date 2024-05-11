@@ -27,7 +27,6 @@ from ..pkg_modules import PkgInspect, PkgVersions
 from ..pkg_utils.exception import PkgException, RedPkgE
 from ..pkg_utils.util_types import (
     DateTimeAndVersion,
-    Iterable,
     Literal,
     Optional,
     PyPIOptionsT,
@@ -36,8 +35,7 @@ from ..pkg_utils.util_types import (
 )
 from ..pkg_utils.utils import (
     BASE_EXCEPTIONS,
-    alter_if_string,
-    equal_,
+    best_match,
     filter_empty,
     find_best_match,
     get_properties,
@@ -143,8 +141,13 @@ def inspect_package(
         try:
             return inspect_pypi(package, package_manager, item=itemOrfile)
         except PkgException as pkg_error:
+            e = (
+                _any_e
+                if best_match(_any_e, pkg_error.args)
+                else f"{_any_e}\n{pkg_error.args[0]}"
+            )
             raise RedPkgE(
-                f"{_any_e}\n{pkg_error.args[0]}",
+                e,
                 "If inspecting a package on PyPI, please refer to the 'inspect_pypi' function for more information.",
             )
 

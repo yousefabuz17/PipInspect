@@ -215,8 +215,8 @@ def get_opmethod(
 add_ = get_opmethod("+")
 multiply_ = get_opmethod("*")
 pow_ = get_opmethod("**")
-equal_ = get_opmethod("==")
-lessthan_ = get_opmethod("<")
+eq_ = get_opmethod("==")
+lt_ = get_opmethod("<")
 
 
 # region InspectUtils
@@ -1185,7 +1185,7 @@ def bytes_converter(
     results: tuple[str, float, int] = next(
         (f"{(total := num/v):.3f} {k[:2] if symbol_only else k}", total, num)
         for k, v in bytes_unit_chart().items()
-        if lessthan_(num / BYTES_BASE, v)
+        if lt_(num / BYTES_BASE, v)
     )
     if not total:
         # Return None if the total size was not calculated
@@ -1357,7 +1357,7 @@ def remove_prefix(s: str, prefix: str) -> str:
     """
     try:
         return s.removeprefix(prefix)
-    except BASE_EXCEPTIONS + (AttributeError,):
+    except (*BASE_EXCEPTIONS, AttributeError,):
         return s[s.startswith(prefix) and len(prefix) :]
 
 
@@ -1471,10 +1471,12 @@ def abbreviate_number(num: Union[int, str]):
         num = int(clean(num))
 
     # Define abbreviations and their respective scales
+    global million, billion, trillion
+    
     abbrevs = (
-        (1_000_000_000_000, "Trillion"),
-        (1_000_000_000, "Billion"),
-        (1_000_000, "Million"),
+        ((trillion := 1_000_000_000_000), "Trillion"),
+        ((billion := 1_000_000_000), "Billion"),
+        ((million := 1_000_000), "Million"),
     )
 
     for scale, abbrev in abbrevs:
@@ -1529,7 +1531,7 @@ __all__ = tuple(
     k
     for k, v in globals().items()
     # Constants, not private, and is a class
-    if any((k.isupper(), not k.startswith("_"), is_class(k)))
+    if any((k.isupper(), not k.startswith("_"), is_class(k), k in ("million", "billion", "trillion")))
     # Functions and not decorators
     and any((is_function(v), not has_decorators(v, "_cached_property")))
 )

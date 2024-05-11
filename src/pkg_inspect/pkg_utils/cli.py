@@ -64,7 +64,7 @@ def cli_parser():
     gvps_true("--gvpdoc", help="Display the documentation of 'get_version_packages'.")
     gvps_true("--pretty", help="Display the item in 'pretty' format.")
     gvps_add("-pyver", help="Choose a python version to inspect.")
-    
+
     pvc = sub_parsers.add_parser("pkg-version-compare", help="")
     pvc_true = _store_true((pvc_add := pvc.add_argument))
     pvc_true("--pvcdoc", help="Display the documentation of 'pkg_version_compare'.")
